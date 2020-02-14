@@ -25,14 +25,24 @@ app.all('*', function(req, res, next) {
 /* HEP Post Paths */
 app.post('/get/:id', function (req, res) {
   if (config.debug) console.log('NEW API POST REQ', req.body);
-  var data = req.body;
-  if (!data|!config.elastic) { res.status(500).end(); return }
-  if (!data.constructor === Array) data = [data];
-  // Reduce to an Array containing the selected HEP Field
-  var filtered_data = data.map(function (entry) {
-    return entry[config.elastic.hep_field];
+  let body = req.body;
+  if (!body || !body.data || !config.elastic) { res.status(500).end(); return }
+  let data = body.data;
+
+  if (!Array.isArray(data)) {
+      data = [data]
+  }
+
+  let filtered_data = [];
+  data.forEach(item => {
+      if (config.elastic.hep_field in item && item[config.elastic.hep_field]) {
+          filtered_data.push(item[config.elastic.hep_field]);
+      } else {
+          filtered_data.push(item);
+      }
   });
-  if (filtered_data === undefined || filtered_data.length == 0) {
+
+  if (filtered_data.length === 0) {
 	res.status(500).end();
   } else {
 	// Form ES Query
